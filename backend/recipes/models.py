@@ -4,12 +4,11 @@ from django.db import models
 
 User = get_user_model()
 
+# ToDo: валидатор для формата base64??
+# ToDo: Boolean fields - are lowercase true / false in redoc a problem?
+# ToDo: Boolean fields - and how about url queries of 0 and 1?
 
-# ToDo: ManyToMany Recipes - Ingredients
-# ToDo: __str__ for recipes
-# ToDo: валидатор для формата base64?
-# Boolean fields - are lowercase true / false in redoc a problem?
-# Boolean fields - and how about url queries of 0 and 1?
+
 class Tag(models.Model):
     """Теги для рецептов."""
     name = models.CharField('Название тега', max_length=200, unique=True)
@@ -31,8 +30,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     """Ингредиенты рецептов и их единицы измерения."""
-    name = models.CharField('Название ингредиента', max_length=200)
-    uom = models.CharField('Единица измерения', max_length=200)
+    name = models.CharField(
+        'Название ингредиента',
+        max_length=200,
+        unique=True
+    )
+    measurement_unit = models.CharField('Единица измерения', max_length=200)
 
     class Meta():
         ordering = ('name', )
@@ -56,12 +59,32 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Автор рецепта'
     )
-    is_favorited = models.BooleanField('Статус избранного')
-    is_in_shopping_cart = models.BooleanField('Статус нахождения в корзине')
+    tags = models.ManyToManyField(
+        Tag,
+        null=True,
+        related_name='recipes',
+        verbose_name='Теги'
+    )
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through='IngredientInRecipe',
+        verbose_name='Ингредиенты'
+    )
 
     class Meta():
         verbose_name_plural = 'Рецепты'
         ordering = ('-created_ts', )
 
     def __str__(self):
-        return self.name[:50] + 'by User' + self.author
+        return self.name[:50] + ' by User ' + self.author.username
+
+
+class IngredientInRecipe(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.PositiveSmallIntegerField()
+
+
+class ShoppingCart(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
