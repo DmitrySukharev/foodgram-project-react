@@ -16,9 +16,10 @@ Including another URLconf
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import TagViewSet
+from .views import IngredientViewSet, TagViewSet
 
 router_1 = DefaultRouter()
+router_1.register('ingredients', IngredientViewSet)
 router_1.register('tags', TagViewSet)
 
 urlpatterns = [
