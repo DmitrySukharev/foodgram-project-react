@@ -42,7 +42,7 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return f'{self.name[:50]}, {self.uom[:10]}'
+        return f'{self.name[:50]}, {self.measurement_unit[:10]}'
 
 
 class Recipe(models.Model):
@@ -61,7 +61,6 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        null=True,
         related_name='recipes',
         verbose_name='Теги'
     )
