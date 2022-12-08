@@ -19,15 +19,18 @@ class IngredientInRecipeInline(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    fields = ('name', 'image', 'text', 'cooking_time', 'tags', 'author', 'ingredient_number')
-    readonly_fields = ('ingredient_number',)
+    fields = (('name', 'author'), 'image', 'text', 'cooking_time', 'tags',
+              'favorite_count')
+    readonly_fields = ('favorite_count', )
     list_display = ('name', 'author')
     list_filter = ('name', 'author__username', 'tags')
     search_fields = ('name',)
     inlines = (IngredientInRecipeInline,)
 
-    def ingredient_number(self, obj):
-        return obj.ingredients.count()
+    def favorite_count(self, obj):
+        return obj.user_favorites.count()
+
+    favorite_count.short_description = 'Число добавлений в избранное'
 
 
 admin.site.register(Tag, TagAdmin)
