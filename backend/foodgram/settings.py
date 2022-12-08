@@ -92,6 +92,10 @@ REST_FRAMEWORK = {
     ],
 }
 
+DJOSER = {
+    'HIDE_USERS': False,
+}
+
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'UTC'
