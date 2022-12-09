@@ -14,20 +14,33 @@ class CustomUserSerializer(UserSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed'
-        )
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed')
 
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
         if not request.user.is_authenticated:
             return False
         return Follow.objects.filter(user=request.user, author=obj).exists()
+
+
+class RecipeMinifiedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class CustomUserExtendedSerializer(CustomUserSerializer):
+    recipes = RecipeMinifiedSerializer(source='author_recipes', many=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta():
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_recipes_count(self, obj):
+        return obj.author_recipes.count()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -81,9 +94,3 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not user.is_authenticated:
             return False
         return ShoppingCart.objects.filter(recipe=obj, user=user).exists()
-
-
-class RecipeMinifiedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
