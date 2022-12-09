@@ -1,8 +1,33 @@
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from recipes.models import Ingredient, IngredientInRecipe
 from recipes.models import Recipe, ShoppingCart, Tag
-from users.serializers import CustomUserSerializer
+from users.models import Follow
+
+User = get_user_model()
+
+
+class CustomUserSerializer(UserSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed'
+        )
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get("request")
+        if not request.user.is_authenticated:
+            return False
+        return Follow.objects.filter(user=request.user, author=obj).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -56,3 +81,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not user.is_authenticated:
             return False
         return ShoppingCart.objects.filter(recipe=obj, user=user).exists()
+
+
+class RecipeMinifiedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
