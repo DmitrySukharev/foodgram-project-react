@@ -2,8 +2,10 @@ from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, viewsets
 
 from recipes.models import Ingredient, Recipe, Tag
-from .serializers import CustomUserExtendedSerializer
-from .serializers import IngredientSerializer, RecipeSerializer, TagSerializer
+from .permissions import AuthorOrReadOnly
+from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
+                          RecipeReadSerializer, RecipeWriteSerializer,
+                          TagSerializer)
 
 User = get_user_model()
 
@@ -30,13 +32,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    permission_classes = (permissions.AllowAny,)
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+    permission_classes = (AuthorOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return RecipeReadSerializer
+        return RecipeWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class SubscriptionList(generics.ListAPIView):
     """Получение списка пользователей, на которых подписан текущий юзер."""
     serializer_class = CustomUserExtendedSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         return User.objects.filter(following__user=self.request.user)
