@@ -1,7 +1,13 @@
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, permissions, status, viewsets
+from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
+from rest_framework.views import APIView
+
 
 from recipes.models import Ingredient, Recipe, Tag
+from users.models import Follow
 from .permissions import AuthorOrReadOnly
 from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
                           RecipeReadSerializer, RecipeWriteSerializer,
@@ -51,3 +57,29 @@ class SubscriptionList(generics.ListAPIView):
 
     def get_queryset(self):
         return User.objects.filter(following__user=self.request.user)
+
+
+class Subscription(APIView):
+    http_method_names = ['post', 'delete', 'head', 'options']
+
+    def post(self, request, user_id):
+        author = get_object_or_404(User, pk=user_id)
+        user = request.user
+        if author == user:
+            err_msg = 'Невозможно подписаться на самого себя.'
+            raise ValidationError({'errors': err_msg})
+        if Follow.objects.filter(user=user, author=author).exists():
+            err_msg = 'Такая подписка уже существует.'
+            raise ValidationError({'errors': err_msg})
+        Follow.objects.create(user=user, author=author)
+        context = {'request': request}
+        serializer = CustomUserExtendedSerializer(author, context=context)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, user_id):
+        author = get_object_or_404(User, pk=user_id)
+        user = request.user
+        if not Follow.objects.filter(user=user, author=author).exists():
+            raise ValidationError({'errors:': 'Такой подписки не существует.'})
+        Follow.objects.filter(user=user, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
