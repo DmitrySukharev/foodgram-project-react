@@ -104,6 +104,12 @@ class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientInRecipe
         fields = ('id', 'amount')
+    
+    def validate_amount(self, value):
+        if value < 1:
+            err_msg = 'Убедитесь, что это значение больше либо равно 1.'
+            raise serializers.ValidationError(err_msg)
+        return value
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -114,6 +120,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     ingredients = IngredientInRecipeAddSerializer(many=True)
+
+    def validate_cooking_time(self, value):
+        if value < 1:
+            err_msg = 'Убедитесь, что это значение больше либо равно 1.'
+            raise serializers.ValidationError(err_msg)
+        return value
+
 
     class Meta:
         model = Recipe
