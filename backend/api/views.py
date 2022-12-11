@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from recipes.models import Ingredient, Recipe, Tag
 from users.models import Follow
+from .paginators import CustomPageNumberPagination
 from .permissions import AuthorOrReadOnly
 from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
                           RecipeReadSerializer, RecipeWriteSerializer,
@@ -21,6 +22,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (permissions.AllowAny,)
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -28,6 +30,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (permissions.AllowAny,)
+    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

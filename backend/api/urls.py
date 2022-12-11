@@ -13,5 +13,6 @@ router_1.register('recipes', RecipeViewSet)
 urlpatterns = [
     path('', include(router_1.urls)),
     path('subscriptions/', SubscriptionList.as_view(), name='subscriptions'),
-    path('users/<int:user_id>/subscribe/', Subscription.as_view(), name='subscribe')
+    path('users/<int:user_id>/subscribe/',
+         Subscription.as_view(), name='subscribe')
 ]
