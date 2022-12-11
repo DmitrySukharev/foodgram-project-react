@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
+# from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
 from recipes.models import Ingredient, Recipe, ShoppingCart, Tag
@@ -12,6 +12,7 @@ from .permissions import AuthorOrReadOnly
 from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
                           RecipeMinifiedSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, TagSerializer)
+from .services import check_favorites, check_shopping_cart, check_subscriptions
 
 User = get_user_model()
 
@@ -56,16 +57,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         user = request.user
         recipe = self.get_object()
-        already_in_favorites = user.favorites.filter(id=pk).exists()
+        check_favorites(user, recipe, request.method)
         if request.method == 'POST':
-            if already_in_favorites:
-                raise ValidationError({'errors:': 'Уже есть в избранном.'})
             user.favorites.add(recipe)
             serializer = RecipeMinifiedSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            if not already_in_favorites:
-                raise ValidationError({'errors:': 'Не было в избранном.'})
             user.favorites.remove(recipe)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -74,16 +71,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
         user = request.user
         recipe = self.get_object()
-        already_in_shopping_cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        check_shopping_cart(user, recipe, request.method)
         if request.method == 'POST':
-            if already_in_shopping_cart:
-                raise ValidationError({'errors:': 'Уже есть в списке покупок'})
             ShoppingCart.objects.create(user=user, recipe=recipe)
             serializer = RecipeMinifiedSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            if not already_in_shopping_cart:
-                raise ValidationError({'errors:': 'Не было в списке покупок.'})
             ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -103,12 +96,7 @@ class Subscription(APIView):
     def post(self, request, user_id):
         author = get_object_or_404(User, pk=user_id)
         user = request.user
-        if author == user:
-            err_msg = 'Невозможно подписаться на самого себя.'
-            raise ValidationError({'errors': err_msg})
-        if Follow.objects.filter(user=user, author=author).exists():
-            err_msg = 'Такая подписка уже существует.'
-            raise ValidationError({'errors': err_msg})
+        check_subscriptions(user, author, request.method)
         Follow.objects.create(user=user, author=author)
         context = {'request': request}
         serializer = CustomUserExtendedSerializer(author, context=context)
@@ -117,7 +105,6 @@ class Subscription(APIView):
     def delete(self, request, user_id):
         author = get_object_or_404(User, pk=user_id)
         user = request.user
-        if not Follow.objects.filter(user=user, author=author).exists():
-            raise ValidationError({'errors:': 'Такой подписки не существует.'})
+        check_subscriptions(user, author, request.method)
         Follow.objects.filter(user=user, author=author).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
