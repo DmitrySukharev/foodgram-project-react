@@ -31,13 +31,22 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 
 class CustomUserExtendedSerializer(CustomUserSerializer):
-    recipes = RecipeMinifiedSerializer(source='author_recipes', many=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta():
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
                   'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit:
+            recipes_limit = int(recipes_limit)
+        recipe_qs = obj.author_recipes.all()[:recipes_limit]
+        serializer = RecipeMinifiedSerializer(recipe_qs, many=True)
+        return serializer.data
 
     def get_recipes_count(self, obj):
         return obj.author_recipes.count()
@@ -104,7 +113,7 @@ class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientInRecipe
         fields = ('id', 'amount')
-    
+
     def validate_amount(self, value):
         if value < 1:
             err_msg = 'Убедитесь, что это значение больше либо равно 1.'
@@ -126,7 +135,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             err_msg = 'Убедитесь, что это значение больше либо равно 1.'
             raise serializers.ValidationError(err_msg)
         return value
-
 
     class Meta:
         model = Recipe
