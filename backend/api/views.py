@@ -1,18 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
-
 from recipes.models import Ingredient, Recipe, Tag
 from users.models import Follow
-from .paginators import CustomPageNumberPagination
 from .permissions import AuthorOrReadOnly
 from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
-                          RecipeReadSerializer, RecipeWriteSerializer,
-                          TagSerializer)
+                          RecipeMinifiedSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -51,6 +50,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=[permissions.IsAuthenticated])
+    def favorite(self, request, pk=None):
+        user = request.user
+        recipe = self.get_object()
+        already_in_favorites = user.favorites.filter(id=pk).exists()
+        if request.method == 'POST':
+            if already_in_favorites:
+                raise ValidationError({'errors:': 'Уже есть в избранном.'})
+            user.favorites.add(recipe)
+            serializer = RecipeMinifiedSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            if not already_in_favorites:
+                raise ValidationError({'errors:': 'Не было в избранном.'})
+            user.favorites.remove(recipe)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SubscriptionList(generics.ListAPIView):
