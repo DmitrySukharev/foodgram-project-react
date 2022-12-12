@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -79,6 +81,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
         else:
             ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def download_shopping_cart(self, request):
+        user = request.user
+        ingredients_in_cart = Ingredient.objects.filter(
+            ingredientinrecipe__recipe__shoppingcart__user=user
+        )
+        total_ingredients = ingredients_in_cart.annotate(
+            sum_=Sum('ingredientinrecipe__amount')
+        )
+        result = 'Перечень ингредиентов для рецептов из списка покупок:\n'
+        for i, item in enumerate(total_ingredients, 1):
+            line = f'{i}) {item.name} ({item.measurement_unit}): {item.sum_}\n'
+            result += line
+        # below is needed for Django 2.2; since v3.2 it supports headers=
+        response = HttpResponse(result, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename="to_buy.txt"'
+        return response
 
 
 class SubscriptionList(generics.ListAPIView):
