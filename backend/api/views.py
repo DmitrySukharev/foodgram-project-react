@@ -2,10 +2,10 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-# from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
 from recipes.models import Ingredient, Recipe, ShoppingCart, Tag
@@ -33,6 +33,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('^name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -45,6 +47,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
     permission_classes = (AuthorOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('author', 'tags')
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
