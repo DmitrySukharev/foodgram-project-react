@@ -1,4 +1,7 @@
+import base64
+
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
@@ -45,7 +48,11 @@ class CustomUserExtendedSerializer(CustomUserSerializer):
         if recipes_limit:
             recipes_limit = int(recipes_limit)
         recipe_qs = obj.author_recipes.all()[:recipes_limit]
-        serializer = RecipeMinifiedSerializer(recipe_qs, many=True)
+        serializer = RecipeMinifiedSerializer(
+            recipe_qs,
+            many=True,
+            context={'request': request}
+        )
         return serializer.data
 
     def get_recipes_count(self, obj):
@@ -95,6 +102,16 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                   'is_favorited', 'is_in_shopping_cart')
 
 
+class Base64ImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
+
+        return super().to_internal_value(data)
+
+
 class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
 
@@ -116,6 +133,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
+    image = Base64ImageField()
     ingredients = IngredientInRecipeAddSerializer(many=True)
 
     class Meta:
@@ -167,5 +185,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, obj):
         request = self.context.get('request')
+        obj.is_favorited = False
+        obj.is_in_shopping_cart = False
         serializer = RecipeReadSerializer(obj, context={'request': request})
         return serializer.data

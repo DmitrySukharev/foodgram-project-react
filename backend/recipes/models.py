@@ -72,7 +72,8 @@ class Recipe(models.Model):
     created_ts = models.DateTimeField('Дата публикации', auto_now_add=True)
     name = models.CharField('Название рецепта', max_length=200)
     text = models.TextField('Текст рецепта')
-    image = models.TextField('Картинка к рецепту (base64)')
+    image = models.ImageField(
+        'Картинка к рецепту', upload_to='recipes/images')
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления в минутах', validators=[MinValueValidator(1)])
     author = models.ForeignKey(

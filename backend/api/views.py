@@ -70,7 +70,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         check_favorites(user, recipe, request.method)
         if request.method == 'POST':
             user.favorites.add(recipe)
-            serializer = RecipeMinifiedSerializer(recipe)
+            context = {'request': request}
+            serializer = RecipeMinifiedSerializer(recipe, context=context)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             user.favorites.remove(recipe)
@@ -84,7 +85,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         check_shopping_cart(user, recipe, request.method)
         if request.method == 'POST':
             ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = RecipeMinifiedSerializer(recipe)
+            context = {'request': request}
+            serializer = RecipeMinifiedSerializer(recipe, context=context)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
