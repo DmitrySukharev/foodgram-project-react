@@ -6,7 +6,7 @@ from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from recipes.models import Ingredient, IngredientInRecipe
-from recipes.models import Recipe, Tag
+from recipes.models import Recipe, ShoppingCart, Tag
 from users.models import Follow
 
 User = get_user_model()
@@ -185,7 +185,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, obj):
         request = self.context.get('request')
-        obj.is_favorited = False
-        obj.is_in_shopping_cart = False
+        user = request.user
+        cart_qs = ShoppingCart.objects.filter(recipe=obj, user=user)
+        obj.is_favorited = obj.user_favorites.filter(id=user.id).exists()
+        obj.is_in_shopping_cart = cart_qs.exists()
         serializer = RecipeReadSerializer(obj, context={'request': request})
         return serializer.data
