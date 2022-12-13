@@ -3,7 +3,7 @@ from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from recipes.models import Ingredient, IngredientInRecipe
-from recipes.models import Recipe, ShoppingCart, Tag
+from recipes.models import Recipe, Tag
 from users.models import Follow
 
 User = get_user_model()
@@ -81,8 +81,8 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(read_only=True, many=True)
     author = CustomUserSerializer(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField()
+    is_in_shopping_cart = serializers.BooleanField()
     ingredients = IngredientInRecipeSerializer(
         source='ingredientinrecipe_set',
         many=True
@@ -93,18 +93,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'text', 'image', 'cooking_time',
                   'tags', 'author', 'ingredients',
                   'is_favorited', 'is_in_shopping_cart')
-
-    def get_is_favorited(self, obj):
-        user = self.context.get('request').user
-        if not user.is_authenticated:
-            return False
-        return obj.user_favorites.filter(id=user.id).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
-        if not user.is_authenticated:
-            return False
-        return ShoppingCart.objects.filter(recipe=obj, user=user).exists()
 
 
 class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
@@ -130,16 +118,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     )
     ingredients = IngredientInRecipeAddSerializer(many=True)
 
+    class Meta:
+        model = Recipe
+        fields = ('image', 'name', 'text', 'cooking_time', 'author',
+                  'tags', 'ingredients')
+
     def validate_cooking_time(self, value):
         if value < 1:
             err_msg = 'Убедитесь, что это значение больше либо равно 1.'
             raise serializers.ValidationError(err_msg)
         return value
-
-    class Meta:
-        model = Recipe
-        fields = ('image', 'name', 'text', 'cooking_time', 'author',
-                  'tags', 'ingredients')
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')

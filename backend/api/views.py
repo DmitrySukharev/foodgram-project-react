@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from recipes.models import Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Follow
+from .filters import RecipeFilter
 from .permissions import AuthorOrReadOnly
 from .serializers import (CustomUserExtendedSerializer, IngredientSerializer,
                           RecipeMinifiedSerializer, RecipeReadSerializer,
@@ -44,11 +45,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     Просмотр / добавление / обновление / удаление рецепта по id
     """
 
-    queryset = Recipe.objects.all()
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
     permission_classes = (AuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('author', 'tags')
+    filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        return Recipe.objects.with_annotations(user)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':

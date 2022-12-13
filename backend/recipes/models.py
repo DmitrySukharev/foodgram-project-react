@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MinValueValidator
 from django.db import models
+from django.db.models import Exists, OuterRef, Value
 
 User = get_user_model()
 
@@ -47,6 +48,25 @@ class Ingredient(models.Model):
         return f'{self.name[:50]}, {self.measurement_unit[:10]}'
 
 
+class CustomRecipeQueryset(models.QuerySet):
+    def with_annotations(self, user):
+        if not user.is_authenticated:
+            return self.annotate(
+                is_favorited=Value(False, models.BooleanField()),
+                is_in_shopping_cart=Value(False, models.BooleanField()))
+
+        new_queryset = self.annotate(
+            is_favorited=Exists(
+                user.favorites.filter(id=OuterRef('pk'))
+            ),
+            is_in_shopping_cart=Exists(
+                ShoppingCart.objects.filter(
+                    user=user, recipe__pk=OuterRef('pk'))
+            )
+        )
+        return new_queryset
+
+
 class Recipe(models.Model):
     """Класс для хранения рецептов."""
     created_ts = models.DateTimeField('Дата публикации', auto_now_add=True)
@@ -71,6 +91,8 @@ class Recipe(models.Model):
         through='IngredientInRecipe',
         verbose_name='Ингредиенты'
     )
+
+    objects = CustomRecipeQueryset.as_manager()
 
     class Meta():
         verbose_name_plural = 'Рецепты'
