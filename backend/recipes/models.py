@@ -48,6 +48,7 @@ class Ingredient(models.Model):
 
 
 class CustomRecipeQueryset(models.QuerySet):
+    """Переопредение queryset-а для рецептов и аннотация доп. полями."""
     def with_annotations(self, user):
         if not user.is_authenticated:
             return self.annotate(
@@ -104,11 +105,13 @@ class Recipe(models.Model):
 
 
 class IngredientInRecipe(models.Model):
+    """Ингредиенты, используемые в рецепте, и их количество."""
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()
 
 
 class ShoppingCart(models.Model):
+    """Рецепты в списке покупок."""
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

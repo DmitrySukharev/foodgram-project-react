@@ -43,6 +43,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     Получение списка рецептов
     Просмотр / добавление / обновление / удаление рецепта по id
+    Добавление рецепта в избранное / удаление из избранного (action)
+    Добавление рецепта в корзину / удаление из корзины (action)
+    Подсчёт ингредиентов для рецептов в корзине и выгрузка файла (action)
     """
 
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
@@ -121,6 +124,7 @@ class SubscriptionList(generics.ListAPIView):
 
 
 class Subscription(APIView):
+    """Добавление / удаление подписки."""
     http_method_names = ['post', 'delete', 'head', 'options']
 
     def post(self, request, user_id):

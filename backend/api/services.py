@@ -5,6 +5,7 @@ from users.models import Follow
 
 
 def check_favorites(user, recipe, method):
+    """Проверка наличие рецепта в избранном."""
     already_in_favorites = user.favorites.filter(id=recipe.id).exists()
 
     if method == 'POST' and already_in_favorites:
@@ -17,6 +18,7 @@ def check_favorites(user, recipe, method):
 
 
 def check_shopping_cart(user, recipe, method):
+    """Проверка наличия рецепта в корзине."""
     already_in_cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
 
     if method == 'POST' and already_in_cart:
@@ -29,6 +31,7 @@ def check_shopping_cart(user, recipe, method):
 
 
 def check_subscriptions(user, author, method):
+    """Проверка наличия подписки и предотвращение подписки на самого себя."""
     is_subscribed = Follow.objects.filter(user=user, author=author).exists()
 
     if author == user and method == 'POST':
