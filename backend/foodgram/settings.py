@@ -113,6 +113,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.AllowAny'],
+        'user': ['rest_framework.permissions.IsAuthenticated'],
     },
     'SERIALIZERS': {
         'user': 'api.serializers.CustomUserSerializer',
@@ -120,6 +121,7 @@ DJOSER = {
     },
 }
 
+from rest_framework import permissions
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'UTC'
