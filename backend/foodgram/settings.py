@@ -129,12 +129,12 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r'^/api/.*$'
 
 # CORS_ALLOWED_ORIGINS = [
-#     'http://localhost',
+#     'http://localhost:80',
 # ]
-# CORS_URLS_REGEX = r'^/api/.*$'
