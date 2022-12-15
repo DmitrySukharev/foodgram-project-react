@@ -282,7 +282,7 @@ const RecipeEdit = ({ onItemDelete }) => {
             disabled={checkIfDisabled()}
             className={styles.button}
           >
-            Редактировать рецепт
+            Сохранить
           </Button>
           <div
             className={styles.deleteRecipe}
