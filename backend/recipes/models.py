@@ -5,10 +5,6 @@ from django.db.models import Exists, OuterRef, Value
 
 User = get_user_model()
 
-# ToDo: валидатор для формата base64??
-# ToDo: Boolean fields - are lowercase true / false in redoc a problem?
-# ToDo: Boolean fields - and how about url queries of 0 and 1?
-
 
 class Tag(models.Model):
     """Теги для рецептов."""
@@ -110,8 +106,22 @@ class IngredientInRecipe(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()
 
+    class Meta():
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_recipe_ingredients')
+        ]
+
 
 class ShoppingCart(models.Model):
     """Рецепты в списке покупок."""
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta():
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'user'],
+                name='unique_cart_recipes')
+        ]
