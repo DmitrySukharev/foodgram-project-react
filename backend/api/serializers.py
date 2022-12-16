@@ -1,13 +1,11 @@
-import base64
-
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from recipes.models import Ingredient, IngredientInRecipe
 from recipes.models import Recipe, ShoppingCart, Tag
 from users.models import Follow
+from .fields import Base64ImageField
 
 User = get_user_model()
 
@@ -100,16 +98,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'text', 'image', 'cooking_time',
                   'tags', 'author', 'ingredients',
                   'is_favorited', 'is_in_shopping_cart')
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
-
-        return super().to_internal_value(data)
 
 
 class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
