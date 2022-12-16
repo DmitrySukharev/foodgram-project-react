@@ -143,4 +143,3 @@ class Subscription(APIView):
         check_subscriptions(user, author, request.method)
         Follow.objects.filter(user=user, author=author).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
