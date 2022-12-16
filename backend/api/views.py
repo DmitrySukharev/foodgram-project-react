@@ -65,35 +65,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=[permissions.IsAuthenticated])
-    def favorite(self, request, pk=None):
-        user = request.user
-        recipe = self.get_object()
-        check_favorites(user, recipe, request.method)
-        if request.method == 'POST':
-            user.favorites.add(recipe)
-            context = {'request': request}
+    def manage_recipe_status(self, user, recipe):
+        """Добавление рецепта в избранное / в корзину или удаление."""
+        if self.request.method == 'POST':
+            if self.action == 'favorite':
+                user.favorites.add(recipe)
+            elif self.action == 'shopping_cart':
+                ShoppingCart.objects.create(user=user, recipe=recipe)
+            context = {'request': self.request}
             serializer = RecipeMinifiedSerializer(recipe, context=context)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            user.favorites.remove(recipe)
+            if self.action == 'favorite':
+                user.favorites.remove(recipe)
+            elif self.action == 'shopping_cart':
+                ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=[permissions.IsAuthenticated])
-    def shopping_cart(self, request, pk=None):
-        user = request.user
+    def favorite(self, request, pk=None):
         recipe = self.get_object()
-        check_shopping_cart(user, recipe, request.method)
-        if request.method == 'POST':
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            context = {'request': request}
-            serializer = RecipeMinifiedSerializer(recipe, context=context)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        check_favorites(request.user, recipe, request.method)
+        return self.manage_recipe_status(request.user, recipe)
+
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=[permissions.IsAuthenticated])
+    def shopping_cart(self, request, pk=None):
+        recipe = self.get_object()
+        check_shopping_cart(request.user, recipe, request.method)
+        return self.manage_recipe_status(request.user, recipe)
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):
@@ -142,3 +143,4 @@ class Subscription(APIView):
         check_subscriptions(user, author, request.method)
         Follow.objects.filter(user=user, author=author).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
