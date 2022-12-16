@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import Ingredient, IngredientInRecipe
 from recipes.models import Recipe, ShoppingCart, Tag
@@ -144,19 +143,23 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(err_msg)
         return value
 
+    def create_ingredients_in_recipe(self, recipe, ingredients):
+        recipe_ingredients_to_create = []
+        for ingredient in ingredients:
+            new_item = IngredientInRecipe(
+                recipe=recipe,
+                ingredient=ingredient['id'],
+                amount=ingredient['amount']
+            )
+            recipe_ingredients_to_create.append(new_item)
+        IngredientInRecipe.objects.bulk_create(recipe_ingredients_to_create)
+
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         current_recipe = Recipe.objects.create(**validated_data)
         current_recipe.tags.add(*tags)
-        for ingredient in ingredients:
-            amount = ingredient['amount']
-            current_ingredient = ingredient['id']
-            IngredientInRecipe.objects.create(
-                recipe=current_recipe,
-                ingredient=current_ingredient,
-                amount=amount
-            )
+        self.create_ingredients_in_recipe(current_recipe, ingredients)
         return current_recipe
 
     def update(self, obj, validated_data):
@@ -169,14 +172,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             obj.tags.add(*tags)
         if ingredients:
             obj.ingredients.clear()
-            for ingredient in ingredients:
-                amount = ingredient['amount']
-                current_ingredient = ingredient['id']
-                IngredientInRecipe.objects.create(
-                    recipe=obj,
-                    ingredient=current_ingredient,
-                    amount=amount
-                )
+            self.create_ingredients_in_recipe(obj, ingredients)
+        # save() обязателен - могут быть изменены атрибуты рецепта, напр. имя
         obj.save()
         return obj
 
