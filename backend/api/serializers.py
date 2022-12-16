@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import Ingredient, IngredientInRecipe
 from recipes.models import Recipe, ShoppingCart, Tag
@@ -109,7 +110,7 @@ class IngredientInRecipeAddSerializer(serializers.ModelSerializer):
 
     def validate_amount(self, value):
         if value < 1:
-            err_msg = 'Убедитесь, что это значение больше либо равно 1.'
+            err_msg = 'Убедитесь, что количество каждого ингредиента больше 0'
             raise serializers.ValidationError(err_msg)
         return value
 
@@ -129,9 +130,17 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         fields = ('image', 'name', 'text', 'cooking_time', 'author',
                   'tags', 'ingredients')
 
+    def validate(self, data):
+        ingredients = data['ingredients']
+        used_ingredients = set([item['id'] for item in ingredients])
+        if len(ingredients) > len(used_ingredients):
+            err_msg = 'Ингредиенты в рецепте не должны повторяться.'
+            raise serializers.ValidationError(err_msg)
+        return data
+
     def validate_cooking_time(self, value):
         if value < 1:
-            err_msg = 'Убедитесь, что это значение больше либо равно 1.'
+            err_msg = 'Убедитесь, что это значение больше либо равно 1!'
             raise serializers.ValidationError(err_msg)
         return value
 
