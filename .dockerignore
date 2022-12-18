@@ -1,0 +1,28 @@
+# This project
+**/media
+
+# Django stuff:
+**/db.sqlite3
+**/db.sqlite3-journal
+
+# Git
+.git
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__
+
+# Unit test / coverage reports
+**/htmlcov
+
+# Environments
+.env
+.venv
+env
+venv
+ENV
+
+# Папки, создаваемые средой разработки
+.vscode
+
+# Jupyter Notebook
+**/.ipynb_checkpoints
